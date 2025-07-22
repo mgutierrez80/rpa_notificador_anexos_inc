@@ -1,0 +1,74 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Logs
+*.log
+log/
+
+# Virtual environment
+venv/
+env/
+.venv/
+ENV/
+
+# Python-specific
+*.pyo
+*.pyd
+*.pdb
+
+# Distribution / packaging
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Jupyter notebooks
+*.ipynb
+
+# Environments / secrets
+.env
+*.env
+
+# IDEs / Editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Excel/CSV generated or temporary files
+*.xls
+*.xlsx
+*.csv
+*.pdf
+~$*
+
+# Tener en cuenta estos folders pero no su contenido
+#Sólo mantiene .gitkeep
+logs/*
+!logs/.gitkeep
+FICHEROS/*
+FICHEROS/.gitkeep
+CARGA_INFORMES/*
+CARGA_INFORMES/.gitkeep
+
+
+
+
+# pytest cache
+.pytest_cache/
+.coverage
+
+# Compiled Cython files
+*.so
+
+# Backup files
+*.bak
+*.swp
+*.tmp
+``
