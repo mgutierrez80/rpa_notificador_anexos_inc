@@ -13,17 +13,16 @@ def send_reports(reportes_generados, config):
     Envía los reportes generados a los correos correspondientes por zona.
     """
     try:
-        with open("config/email_map.json", "r", encoding="utf-8") as f:
+        file_mapping = config.get("Archivos", "archivo_mapeo_adm")
+        with open(file_mapping, "r", encoding="utf-8") as f:
             email_map = json.load(f)
     except FileNotFoundError:
         logging.error(
-            "No se encontró el archivo 'config/email_map.json'. No se enviarán correos."
+            f"No se encontró el archivo '{file_mapping}'. No se enviarán correos."
         )
         return
     except json.JSONDecodeError:
-        logging.error(
-            "Error al decodificar 'config/email_map.json'. Verifique el formato."
-        )
+        logging.error(f"Error al decodificar '{file_mapping}'. Verifique el formato.")
         return
 
     sender_email = config.get("Email", "sender_email")

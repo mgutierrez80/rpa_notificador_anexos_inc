@@ -4,7 +4,7 @@ import logging
 import sys
 import os
 
-# Agrega el directorio raíz al path para asegurar que las importaciones funcionen
+# Directorio raíz al path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.main import main_job
@@ -12,22 +12,19 @@ from config.logger import setup_logging
 
 # --- PROGRAMACIÓN DE LA TAREA ---
 if __name__ == "__main__":
-    # Esta protección es VITAL para el multiprocesamiento en Windows.
-
-    # 1. Configurar logging
+    # Configurar logging
     setup_logging()
 
-    # 2. Programar el job
+    # Programar el job
     logging.info("Servicio de RPA iniciado. Esperando la hora programada...")
 
-    # Descomentar para pruebas inmediatas
     main_job()
 
     schedule.every().monday.at("16:30").do(main_job)
     schedule.every().wednesday.at("16:30").do(main_job)
     schedule.every().friday.at("16:30").do(main_job)
 
-    # 3. Bucle de ejecución
+    # Bucle de ejecución
     while True:
         try:
             schedule.run_pending()

@@ -6,7 +6,7 @@ from utils.redmineconnect import RedmineConnector
 from utils.functions import process_incidents, generate_reports, cleanup_old_reports
 from utils.emailsender import send_reports
 
-# --- 1. CONFIGURACIÓN INICIAL ---
+# --- CONFIGURACIÓN INICIAL ---
 config = ConfigParser()
 config.read("config/config.ini")
 
@@ -24,7 +24,7 @@ def main_job():
 
     try:
         # --- EXTRACCIÓN DE DATOS DE REDMINE (EN PARALELO) ---
-        logging.info("Paso 1: Extrayendo incidencias de Redmine en paralelo...")
+        logging.info(" Extrayendo incidencias de Redmine en paralelo...")
         try:
             redmine_conn = RedmineConnector(config)
             issues_data = redmine_conn.get_redmine_issues_parallel()
@@ -55,11 +55,9 @@ def main_job():
 
         # --- PROCESAMIENTO DE DATOS ---
 
-        logging.info("Paso 2: Procesando incidencias y verificando anexos...")
+        logging.info("Procesando incidencias y verificando anexos...")
         df_reporte_completo = process_incidents(df_incidencias, NOMBRE_CHECKLIST)
-        df_reporte_completo.to_excel(
-            "df_reporte_completo_incidencias_redmine.xlsx", index=False
-        )
+
         if df_reporte_completo.empty:
             logging.warning(
                 "El DataFrame procesado está vacío. No se generarán reportes."
@@ -69,7 +67,7 @@ def main_job():
         logging.info("Procesamiento completado.")
 
         # --- GENERACIÓN DE REPORTES POR ZONA ---
-        logging.info("Paso 3: Generando reportes por zona...")
+        logging.info("Generando reportes por zona...")
         reportes_generados = generate_reports(df_reporte_completo, RUTA_REPORTES)
 
         if not reportes_generados:
@@ -79,11 +77,11 @@ def main_job():
         logging.info(f"Se generaron {len(reportes_generados)} reportes.")
 
         # --- ENVÍO DE CORREOS ---
-        logging.info("Paso 4: Enviando reportes por correo electrónico...")
+        logging.info("Enviando reportes por correo electrónico...")
         send_reports(reportes_generados, config)
 
         # --- LIMPIEZA DE REPORTES ANTIGUOS ---
-        logging.info("Paso 5: Limpiando reportes con más de 7 días de antigüedad...")
+        logging.info("Limpiando reportes con más de 7 días de antigüedad...")
         cleanup_old_reports(folder_path=RUTA_REPORTES, days_to_keep=5)
 
         logging.info("===================================================")
