@@ -2,6 +2,7 @@ from redminelib import Redmine
 from datetime import datetime
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dateutil.relativedelta import relativedelta
 import os
 
 
@@ -29,7 +30,9 @@ class RedmineConnector:
                 requests={"verify": False, "headers": self.headers},
             )
             self.redmine.auth()
-
+            self.dia_corte = config.getint(
+                "Redmine", "dia_corte_mes_anterior", fallback=5
+            )
             self.project_id = config.get("Redmine", "project_id")
 
             self.maps_dict = {
@@ -47,23 +50,20 @@ class RedmineConnector:
             logging.error(f"Error al inicializar RedmineConnector: {e}", exc_info=True)
             raise
 
-    def _fetch_page(self, offset, limit, start_date):
+    def _fetch_page(self, offset, filtro_fecha):
         """
         Función trabajadora que obtiene una página de incidencias.
         Es un método de la clase para acceder a la configuración fácilmente.
         """
-        today = datetime.now()
-        start_date = today.replace(day=1).strftime("%Y-%m-%d")
-        end_date = today.strftime("%Y-%m-%d")
-        filtro_fecha = f"><{start_date}|{end_date}"
+
         processed_issues = []
         try:
             # Se usa el objeto Redmine de la instancia. redminelib es thread-safe para lecturas.
             issues = self.redmine.issue.filter(
                 project_id=self.project_id,
                 created_on=filtro_fecha,
-                cf_21=filtro_fecha,  # Asumiendo que cf_21 es el campo de fecha de incidencia
-                status_id=5,  # Asumiendo que el estado 5 es "Cerrado"
+                # cf_21=filtro_fecha,  # Asumiendo que cf_21 es el campo de fecha de incidencia
+                # status_id=5,  # Asumiendo que el estado 5 es "Cerrado"
                 cf_18="PROCEDE",
                 include=["attachments"],
                 sort="updated_on:asc",
@@ -112,9 +112,22 @@ class RedmineConnector:
         try:
             limit = 100
             today = datetime.now()
-            start_date = today.replace(day=1).strftime("%Y-%m-%d")
-            end_date = today.strftime("%Y-%m-%d")
-            filtro_fecha = f"><{start_date}|{end_date}"
+            if today.day <= self.dia_corte:
+                # Si estamos a principio de mes, busca desde el mes anterior.
+                end_date = today
+                start_date = (today - relativedelta(months=1)).replace(day=1)
+            else:
+                # Si no, busca solo en el mes actual.
+                end_date = today
+                start_date = today.replace(day=1)
+
+            # Formatear fechas y crear el string de filtro para Redmine
+            start_date_str = start_date.strftime("%Y-%m-%d")
+            end_date_str = end_date.strftime("%Y-%m-%d")
+            filtro_fecha = f"><{start_date_str}|{end_date_str}"
+            logging.info(
+                f"Ejecución día {today.day}. Usando rango de fechas: {start_date_str} a {end_date_str}"
+            )
 
             # 1. Llamada inicial para obtener el conteo total (necesario para la paginación)
             resource_set = self.redmine.issue.filter(
@@ -136,7 +149,7 @@ class RedmineConnector:
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 # 2. Crear y enviar todas las tareas al pool
                 future_to_offset = {
-                    executor.submit(self._fetch_page, offset, limit, start_date): offset
+                    executor.submit(self._fetch_page, offset, filtro_fecha): offset
                     for offset in range(0, total_count, limit)
                 }
 

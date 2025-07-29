@@ -1,7 +1,8 @@
 import pandas as pd
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
+import time
 
 
 def leer_checklist(nombre_archivo):
@@ -141,3 +142,50 @@ def generate_reports(df_reporte, ruta_base):
             logging.error(f"No se pudo guardar el reporte para la zona '{zona}': {e}")
 
     return reportes_generados
+
+
+def cleanup_old_reports(folder_path, days_to_keep):
+    """
+    Borra archivos en una carpeta específica que son más antiguos
+    que un número de días determinado.
+
+    Args:
+        folder_path (str): La ruta a la carpeta que se va a limpiar.
+        days_to_keep (int): El número máximo de días que un archivo puede tener.
+    """
+    if not os.path.isdir(folder_path):
+        logging.warning(
+            f"La carpeta de limpieza '{folder_path}' no existe. Se omitirá el paso."
+        )
+        return
+
+    try:
+        cutoff_time = time.time() - (days_to_keep * 24 * 60 * 60)
+        files_deleted_count = 0
+
+        for filename in os.listdir(folder_path):
+            file_path = os.path.join(folder_path, filename)
+
+            # Asegurarse de que es un archivo y no una carpeta
+            if os.path.isfile(file_path):
+                file_mod_time = os.path.getmtime(file_path)
+                if file_mod_time < cutoff_time:
+                    try:
+                        os.remove(file_path)
+                        logging.info(f"Archivo antiguo eliminado: {filename}")
+                        files_deleted_count += 1
+                    except Exception as e:
+                        logging.error(f"No se pudo eliminar el archivo {filename}: {e}")
+
+        if files_deleted_count == 0:
+            logging.info("No se encontraron archivos antiguos para eliminar.")
+        else:
+            logging.info(
+                f"Limpieza completada. Se eliminaron {files_deleted_count} archivos."
+            )
+
+    except Exception as e:
+        logging.error(
+            f"Ocurrió un error durante la limpieza de archivos antiguos: {e}",
+            exc_info=True,
+        )
