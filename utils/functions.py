@@ -3,6 +3,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 import time
+import unicodedata
 
 
 def leer_checklist(nombre_archivo):
@@ -71,6 +72,7 @@ def process_incidents(df, checklist_path):
         for anexo_requerido in checklist:
             # Comparamos el nombre base del anexo (sin extensión)
             nombre_anexo_base = os.path.splitext(anexo_requerido)[0].lower()
+
             fila_reporte[anexo_requerido] = (
                 1 if nombre_anexo_base in ficheros_texto else 0
             )
@@ -84,6 +86,17 @@ def process_incidents(df, checklist_path):
     df_final = df_final.rename(columns={"Tipo de causa": "Tipo de Causa"})
 
     return df_final
+
+
+def quitar_tildes_auto(texto):
+    if not isinstance(texto, str):
+        return texto
+
+    # Normaliza el texto a su forma descompuesta (letra + acento)
+    texto_normalizado = unicodedata.normalize("NFD", texto)
+    # Codifica a ascii ignorando los caracteres que no lo son (los acentos)
+    # y luego decodifica de vuelta a utf-8.
+    return texto_normalizado.encode("ascii", "ignore").decode("utf-8")
 
 
 def generate_reports(df_reporte, ruta_base):
@@ -131,7 +144,9 @@ def generate_reports(df_reporte, ruta_base):
         df_zona = df_zona[columnas_reporte]
 
         fecha_actual = datetime.now().strftime("%Y%m%d")
-        nombre_archivo = f"Reporte_Verificacion_{zona}_{fecha_actual}.xlsx"
+        nombre_archivo = (
+            f"Reporte_Verificacion_{quitar_tildes_auto(zona)}_{fecha_actual}.xlsx"
+        )
         ruta_completa = os.path.join(ruta_base, nombre_archivo)
 
         try:
